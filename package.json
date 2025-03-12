@@ -1,6 +1,6 @@
 {
   "name": "mastra-starter",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "index.mjs",
   "bin": {
     "mastra-starter": "./index.mjs"
