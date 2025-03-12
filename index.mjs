@@ -1,7 +1,10 @@
+import path from 'path';
 import child_process from 'child_process';
 
 import { Command } from 'commander';
 import dotenv from 'dotenv';
+
+const __dirname = path.dirname(import.meta.url.replace('file://', ''));
 
 const main = async () => {
   dotenv.config();
@@ -16,7 +19,9 @@ const main = async () => {
 
   const character = options.character || 'default';
 
-  const cp = child_process.spawn('mastra', ['dev'], {
+  const p = path.join(__dirname, 'node_modules', '.bin', 'mastra');
+  console.log(p);
+  const cp = child_process.spawn(p, ['dev'], {
     env: {
       CHARACTER_JSON_PATH: character,
     },
