@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 
 const __dirname = path.dirname(import.meta.url.replace('file://', ''));
 
+// node index.mjs --character='/Users/a/eliza/characters/trump.character.json'
 const main = async () => {
   dotenv.config();
 
