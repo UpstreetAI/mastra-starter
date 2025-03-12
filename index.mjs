@@ -1,8 +1,9 @@
+import child_process from 'child_process';
+
 import { Command } from 'commander';
 import dotenv from 'dotenv';
 
 const main = async () => {
-  // Load environment variables from .env file
   dotenv.config();
 
   const program = new Command();
@@ -14,7 +15,14 @@ const main = async () => {
   const options = program.opts();
 
   const character = options.character || 'default';
-  console.log(`Hello, world! Character: ${character}`);
+
+  const cp = child_process.spawn('mastra', ['dev'], {
+    env: {
+      CHARACTER_JSON_PATH: character,
+    },
+  });
+  cp.stdout.pipe(process.stdout);
+  cp.stderr.pipe(process.stderr);
 };
 
 (async () => {
