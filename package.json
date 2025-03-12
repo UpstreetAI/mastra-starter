@@ -2,6 +2,9 @@
   "name": "mastra-starter",
   "version": "1.0.0",
   "main": "index.mjs",
+  "bin": {
+    "mastra-starter": "./index.mjs"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "mastra dev"
@@ -15,6 +18,9 @@
     "@ai-sdk/openai": "^1.2.2",
     "@mastra/core": "^0.5.0",
     "@mastra/mcp": "^0.3.0",
+    "commander": "^13.1.0",
+    "dedent": "^1.5.3",
+    "dotenv": "^16.4.7",
     "mastra": "^0.3.0",
     "zod": "^3.24.2"
   },
