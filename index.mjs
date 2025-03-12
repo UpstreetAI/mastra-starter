@@ -24,7 +24,6 @@ const main = async () => {
   cp.stdout.pipe(process.stdout);
   cp.stderr.pipe(process.stderr);
 };
-
 (async () => {
   await main();
 })();
