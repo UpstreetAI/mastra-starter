@@ -22,8 +22,8 @@ const main = async () => {
 
   const character = options.character || 'default';
 
-  const p = path.join(__dirname, 'node_modules', 'mastra', 'dist', 'index.js');
-  const cp = child_process.spawn(process.execPath, [p, 'dev'], {
+  const mastraPath = import.meta.resolve('mastra').replace('file://', '');
+  const cp = child_process.spawn(process.execPath, [mastraPath, 'dev'], {
     env: {
       ...process.env,
       CHARACTER_JSON_PATH: character,
