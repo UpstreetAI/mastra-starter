@@ -22,6 +22,7 @@ const main = async () => {
   const p = path.join(__dirname, 'node_modules', 'mastra', 'dist', 'index.js');
   const cp = child_process.spawn(process.execPath, [p, 'dev'], {
     env: {
+      ...process.env,
       CHARACTER_JSON_PATH: character,
     },
   });
