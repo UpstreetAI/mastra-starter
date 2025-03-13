@@ -2,7 +2,6 @@
 
 import path from 'path';
 import fs from 'fs';
-import child_process from 'child_process';
 
 import { Command } from 'commander';
 import dotenv from 'dotenv';
