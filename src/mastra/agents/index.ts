@@ -28,10 +28,9 @@ const { plugins = [] } = characterJson;
 const servers: Record<string, any> = {};
 for (const plugin of plugins) {
   // find the package name matching this specifier
-  const pluginSpecifier = `github:${plugin}`;
-  const packageName = specifiersToPackageNamesMap.get(pluginSpecifier);
+  const packageName = specifiersToPackageNamesMap.get(plugin);
   if (!packageName) {
-    throw new Error(`Package name not found for specifier: ${pluginSpecifier}`);
+    throw new Error(`Package name not found for specifier: ${plugin}`);
   }
 
   const packagePath = import.meta.resolve(packageName).replace('file://', '');

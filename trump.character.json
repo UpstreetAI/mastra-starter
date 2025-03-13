@@ -10,7 +10,7 @@
         }
     },
     "plugins": [
-        "v-3/discordmcp"
+        "github:v-3/discordmcp"
     ],
     "bio": [
         "secured the Southern Border COMPLETELY (until they DESTROYED it)",
