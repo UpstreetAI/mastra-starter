@@ -6,9 +6,10 @@ import child_process from 'child_process';
 import { Command } from 'commander';
 import dotenv from 'dotenv';
 
-const __dirname = path.dirname(import.meta.url.replace('file://', ''));
-
-// node index.mjs --character='/Users/a/eliza/characters/trump.character.json'
+// node index.mjs --character=trump.character.json
+/*
+pnpm install github:v-3/discordmcp
+*/
 const main = async () => {
   dotenv.config();
 
