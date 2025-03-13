@@ -6,8 +6,8 @@
     "mastra-starter": "./index.mjs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "mastra dev"
+    "dev": "mastra dev",
+    "test": "node index.mjs --character=./trump.character.json"
   },
   "keywords": [],
   "author": "",
