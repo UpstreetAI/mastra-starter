@@ -6,8 +6,7 @@
     "mastra-starter": "./index.mjs"
   },
   "scripts": {
-    "dev": "mastra dev",
-    "test": "node index.mjs --character=./trump.character.json"
+    "test": "node index.mjs dev --character=./trump.character.json"
   },
   "keywords": [],
   "author": "",
