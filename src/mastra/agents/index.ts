@@ -10,7 +10,7 @@ const packageLookup = new PnpmPackageLookup({
   pnpmLockYamlPath: path.join('..', '..', 'pnpm-lock.yaml'),
 });
 
-const characterJsonPath = process.env.CHARACTER_JSON_PATH as string;
+const characterJsonPath = process.env._CHARACTER_JSON_PATH as string;
 const characterJsonString = await fs.promises.readFile(characterJsonPath, 'utf8');
 const characterJson = JSON.parse(characterJsonString);
 const { plugins = [] } = characterJson;

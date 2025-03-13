@@ -26,7 +26,9 @@ const main = async () => {
       const characterJsonPath = path.resolve(process.cwd(), character);
 
       try {
-        await runCharacter(characterJsonPath);
+        await runCharacter(characterJsonPath, {
+          env: process.env,
+        });
       } catch (error) {
         console.error(`Error in dev command: ${error.message}`);
       }
