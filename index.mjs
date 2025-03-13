@@ -9,10 +9,6 @@ import dotenv from 'dotenv';
 
 import { runCharacter, installPackages } from './util.mjs';
 
-// node index.mjs trump.character.json
-/*
-pnpm install github:v-3/discordmcp
-*/
 const main = async () => {
   dotenv.config();
 
@@ -23,6 +19,11 @@ const main = async () => {
     .description('Run Mastra')
     .argument('<character>', 'character json file path')
     .action(async (character) => {
+      if (!character) {
+        console.error('Character json file path is required');
+        process.exit(1);
+      }
+
       const characterJsonPath = path.resolve(process.cwd(), character);
 
       try {
@@ -37,7 +38,7 @@ const main = async () => {
     .command('install')
     .alias('i')
     .description('Install packages using pnpm')
-    .argument('[packages...]', 'packages to install')
+    .argument('<packages...>', 'packages to install')
     .action(async (packages) => {
       try {
         await installPackages(packages);

@@ -29,6 +29,9 @@ importers:
       mastra:
         specifier: ^0.3.0
         version: 0.3.0(@opentelemetry/api@1.9.0)(react@19.0.0)
+      pnpm-package-lookup:
+        specifier: file:packages/pnpm-package-lookup
+        version: file:packages/pnpm-package-lookup
       yaml:
         specifier: ^2.7.0
         version: 2.7.0
@@ -2715,6 +2718,9 @@ packages:
   pkce-challenge@4.1.0:
     resolution: {integrity: sha512-ZBmhE1C9LcPoH9XZSdwiPtbPHZROwAnMy+kIFQVrnMCxY4Cudlz3gBOpzilgc0jOgRaiT3sIWfpMomW2ar2orQ==}
     engines: {node: '>=16.20.0'}
+
+  pnpm-package-lookup@file:packages/pnpm-package-lookup:
+    resolution: {directory: packages/pnpm-package-lookup, type: directory}
 
   postgres-array@2.0.0:
     resolution: {integrity: sha512-VpZrUqU5A69eQyW2c5CA1jtLecCsN2U/bD6VilrFDWq5+5UIEVO7nazS3TEcHf1zuPYO/sqGvUvW62g86RXZuA==}
@@ -6446,6 +6452,10 @@ snapshots:
       thread-stream: 3.1.0
 
   pkce-challenge@4.1.0: {}
+
+  pnpm-package-lookup@file:packages/pnpm-package-lookup:
+    dependencies:
+      yaml: 2.7.0
 
   postgres-array@2.0.0: {}
 

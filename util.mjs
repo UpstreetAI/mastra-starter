@@ -26,11 +26,6 @@ export const runCharacter = async (characterJsonPath) => {
   });
 };
 export const installPackages = async (packageSpecifiers) => {
-  if (packageSpecifiers.length === 0) {
-    console.log("No packages specified to install");
-    return;
-  }
-
   console.log(`Installing packages: ${packageSpecifiers.join(", ")}`);
 
   return new Promise((resolve, reject) => {
