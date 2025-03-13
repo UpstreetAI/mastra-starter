@@ -30,8 +30,8 @@ importers:
         specifier: ^0.3.0
         version: 0.3.0(@opentelemetry/api@1.9.0)(react@19.0.0)
       pnpm-package-lookup:
-        specifier: file:packages/pnpm-package-lookup
-        version: file:packages/pnpm-package-lookup
+        specifier: ^0.0.1
+        version: 0.0.1
       yaml:
         specifier: ^2.7.0
         version: 2.7.0
@@ -2719,8 +2719,8 @@ packages:
     resolution: {integrity: sha512-ZBmhE1C9LcPoH9XZSdwiPtbPHZROwAnMy+kIFQVrnMCxY4Cudlz3gBOpzilgc0jOgRaiT3sIWfpMomW2ar2orQ==}
     engines: {node: '>=16.20.0'}
 
-  pnpm-package-lookup@file:packages/pnpm-package-lookup:
-    resolution: {directory: packages/pnpm-package-lookup, type: directory}
+  pnpm-package-lookup@0.0.1:
+    resolution: {integrity: sha512-5RYbqHVwX8ZS7wDe/7xhr7Nl/k3aaTLyjBfOVFXNHavHx6x3kXsU1O+AaXLu3Y3xHUtceK46rJxwupPcUSGdAw==}
 
   postgres-array@2.0.0:
     resolution: {integrity: sha512-VpZrUqU5A69eQyW2c5CA1jtLecCsN2U/bD6VilrFDWq5+5UIEVO7nazS3TEcHf1zuPYO/sqGvUvW62g86RXZuA==}
@@ -6453,7 +6453,7 @@ snapshots:
 
   pkce-challenge@4.1.0: {}
 
-  pnpm-package-lookup@file:packages/pnpm-package-lookup:
+  pnpm-package-lookup@0.0.1:
     dependencies:
       yaml: 2.7.0
 
