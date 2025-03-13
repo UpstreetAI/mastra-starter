@@ -18,7 +18,7 @@ const { plugins = [] } = characterJson;
 const servers: Record<string, any> = {};
 for (const plugin of plugins) {
   // find the package name matching this specifier
-  const packageName = await packageLookup.getPackageName(plugin);
+  const packageName = await packageLookup.getPackageNameBySpecifier(plugin);
   if (!packageName) {
     throw new Error(`Package name not found for specifier: ${plugin}`);
   }
