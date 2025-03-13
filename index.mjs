@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 
 import path from 'path';
+import fs from 'fs';
 import child_process from 'child_process';
 
 import { Command } from 'commander';
 import dotenv from 'dotenv';
 
-// node index.mjs --character=trump.character.json
+import { runCharacter, installPackages } from './util.mjs';
+
+// node index.mjs trump.character.json
 /*
 pnpm install github:v-3/discordmcp
 */
@@ -18,20 +21,61 @@ const main = async () => {
   program
     .command('dev')
     .description('Run Mastra')
-    .requiredOption('--character <string>', 'character json file path')
-    .action((options) => {
-      const character = options.character;
+    .argument('<character>', 'character json file path')
+    .action(async (character) => {
       const characterJsonPath = path.resolve(process.cwd(), character);
 
-      const mastraPath = import.meta.resolve('mastra').replace('file://', '');
-      const cp = child_process.spawn(process.execPath, [mastraPath, 'dev'], {
-        env: {
-          ...process.env,
-          CHARACTER_JSON_PATH: characterJsonPath,
-        },
-      });
-      cp.stdout.pipe(process.stdout);
-      cp.stderr.pipe(process.stderr);
+      try {
+        await runCharacter(characterJsonPath);
+      } catch (error) {
+        console.error(`Error in dev command: ${error.message}`);
+      }
+      process.exit(1);
+    });
+
+  program
+    .command('install')
+    .alias('i')
+    .description('Install packages using pnpm')
+    .argument('[packages...]', 'packages to install')
+    .action(async (packages) => {
+      try {
+        await installPackages(packages);
+      } catch (error) {
+        console.error(`Error in install command: ${error.message}`);
+      }
+      process.exit(1);
+    });
+  
+  program
+    .command('installall')
+    .alias('ia')
+    .description('Install all plugins from character.json files')
+    .argument('<files...>', 'character.json file paths')
+    .action(async (files) => {
+      try {
+        const pluginsToInstall = new Set();
+        
+        for (const file of files) {
+          const characterJsonPath = path.resolve(process.cwd(), file);
+          const characterJsonString = await fs.promises.readFile(characterJsonPath, 'utf8');
+          const characterJson = JSON.parse(characterJsonString);
+          
+          if (characterJson.plugins && Array.isArray(characterJson.plugins)) {
+            characterJson.plugins.forEach(plugin => pluginsToInstall.add(plugin));
+          }
+        }
+        
+        if (pluginsToInstall.size === 0) {
+          console.log('No plugins found to install');
+          return;
+        }
+        
+        await installPackages([...pluginsToInstall]);
+      } catch (error) {
+        console.error(`Error in installall command: ${error.message}`);
+      }
+      process.exit(1);
     });
 
   program.parse(process.argv);
