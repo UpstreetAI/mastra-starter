@@ -16,27 +16,25 @@ const main = async () => {
   const program = new Command();
 
   program
-    .option('--character <string>', 'character json file path')
-    .parse(process.argv);
+    .command('dev')
+    .description('Run Mastra')
+    .requiredOption('--character <string>', 'character json file path')
+    .action((options) => {
+      const character = options.character;
+      const characterJsonPath = path.resolve(process.cwd(), character);
 
-  const options = program.opts();
+      const mastraPath = import.meta.resolve('mastra').replace('file://', '');
+      const cp = child_process.spawn(process.execPath, [mastraPath, 'dev'], {
+        env: {
+          ...process.env,
+          CHARACTER_JSON_PATH: characterJsonPath,
+        },
+      });
+      cp.stdout.pipe(process.stdout);
+      cp.stderr.pipe(process.stderr);
+    });
 
-  const character = options.character;
-  if (!character) {
-    console.error('Character JSON file path is required');
-    process.exit(1);
-  }
-  const characterJsonPath = path.resolve(process.cwd(), character);
-
-  const mastraPath = import.meta.resolve('mastra').replace('file://', '');
-  const cp = child_process.spawn(process.execPath, [mastraPath, 'dev'], {
-    env: {
-      ...process.env,
-      CHARACTER_JSON_PATH: characterJsonPath,
-    },
-  });
-  cp.stdout.pipe(process.stdout);
-  cp.stderr.pipe(process.stderr);
+  program.parse(process.argv);
 };
 (async () => {
   await main();
