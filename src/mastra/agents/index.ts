@@ -47,23 +47,27 @@ const mcp = new MCPConfiguration({
 const mcpTools = await mcp.getTools();
 
 // composio tools
-const composio = new ComposioIntegration({
-  config: {
-    API_KEY: process.env.COMPOSIO_API_KEY!,
-    entityId: 'default',
-    // connectedAccountId: '899144e5-a466-428b-8a00-7c931fb57f9f',
-    connectedAccountId: '4d79004e-320a-4dc9-be1a-1037a6fe9866',
-  },
-});
-// const actionsEnums = [
-//   'GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER',
-//   'GITHUB_ACTIVITY_LIST_STARGAZERS_FOR_REPO',
-//   'GITHUB_GET_OCTOCAT',
-// ];
-const actionsEnums = composioPlugins.map((plugin) => plugin.replace('composio:', ''));
-const composioToolset = await composio.getTools({
-  actions: actionsEnums,
-}) as ToolsInput;
+const composioApiKey = process.env.COMPOSIO_API_KEY;
+const composioAccountId = process.env.COMPOSIO_ACCOUNT_ID;
+let composioToolset: ToolsInput | undefined;
+if (composioApiKey && composioAccountId) {
+  const composio = new ComposioIntegration({
+    config: {
+      API_KEY: composioApiKey,
+      entityId: 'default',
+      connectedAccountId: composioAccountId,
+    },
+  });
+  // const actionsEnums = [
+  //   'GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER',
+  //   'GITHUB_ACTIVITY_LIST_STARGAZERS_FOR_REPO',
+  //   'GITHUB_GET_OCTOCAT',
+  // ];
+  const actionsEnums = composioPlugins.map((plugin: string) => plugin.replace('composio:', ''));
+  composioToolset = await composio.getTools({
+    actions: actionsEnums,
+  }) as ToolsInput;
+}
 
 // agent
 export const characterAgent = new Agent({
