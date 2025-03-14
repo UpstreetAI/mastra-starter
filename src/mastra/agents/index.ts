@@ -5,6 +5,7 @@ import { Agent, ToolsInput } from '@mastra/core/agent';
 import dedent from 'dedent';
 import { MCPConfiguration } from "@mastra/mcp";
 import { ComposioIntegration } from '@mastra/composio';
+import { sortPlugins } from '../../../util.mjs';
 import { PnpmPackageLookup } from 'pnpm-package-lookup';
 
 // character
@@ -17,15 +18,10 @@ const characterJson = JSON.parse(characterJsonString);
 
 // sort plugins
 const { plugins = [] } = characterJson;
-const npmPlugins: string[] = [];
-const composioPlugins: string[] = [];
-for (const plugin of plugins) {
-  if (plugin.startsWith('composio:')) {
-    composioPlugins.push(plugin);
-  } else {
-    npmPlugins.push(plugin);
-  }
-}
+const {
+  npm: npmPlugins,
+  composio: composioPlugins,
+} = sortPlugins(plugins);
 
 // resolve npm plugins
 const servers: Record<string, any> = {};

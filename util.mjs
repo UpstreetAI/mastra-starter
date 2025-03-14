@@ -29,7 +29,32 @@ export const runCharacter = async (characterJsonPath, {
     });
   });
 };
-export const installPackages = (packageSpecifiers) => {
+
+export const getPluginType = (plugin) => {
+  if (plugin.startsWith('composio:')) {
+    return 'composio';
+  } else {
+    return 'npm';
+  }
+};
+export const sortPlugins = (plugins) => {
+  const npm = [];
+  const composio = [];
+  for (const plugin of plugins) {
+    const pluginType = getPluginType(plugin);
+    if (pluginType === 'npm') {
+      npm.push(plugin);
+    } else if (pluginType === 'composio') {
+      composio.push(plugin);
+    }
+  }
+  return {
+    npm,
+    composio,
+  };
+};
+
+export const installNpmPackages = (packageSpecifiers) => {
   console.log(`Installing packages: ${packageSpecifiers.join(", ")}`);
 
   return new Promise((resolve, reject) => {
@@ -53,7 +78,7 @@ export const installPackages = (packageSpecifiers) => {
     });
   });
 };
-export const buildPackages = async (packageSpecifiers) => {
+export const buildNpmPackages = async (packageSpecifiers) => {
   console.log(`Building packages: ${packageSpecifiers.join(", ")}`);
 
   // get the packagePaths from the packageSpecifiers

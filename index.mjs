@@ -6,7 +6,12 @@ import fs from 'fs';
 import { Command } from 'commander';
 import dotenv from 'dotenv';
 
-import { runCharacter, installPackages, buildPackages } from './util.mjs';
+import {
+  runCharacter,
+  getPluginType,
+  installNpmPackages,
+  buildNpmPackages,
+} from "./util.mjs";
 
 const main = async () => {
   dotenv.config();
@@ -42,8 +47,8 @@ const main = async () => {
     .argument('<packages...>', 'packages to install')
     .action(async (packages) => {
       try {
-        await installPackages(packages);
-        await buildPackages(packages);
+        await installNpmPackages(packages);
+        await buildNpmPackages(packages);
       } catch (error) {
         console.error(`Error in install command: ${error.message}`);
       }
@@ -65,7 +70,11 @@ const main = async () => {
           const characterJson = JSON.parse(characterJsonString);
           
           if (characterJson.plugins && Array.isArray(characterJson.plugins)) {
-            characterJson.plugins.forEach(plugin => pluginsToInstall.add(plugin));
+            characterJson.plugins.forEach(plugin => {
+              if (getPluginType(plugin) === 'npm') {
+                pluginsToInstall.add(plugin);
+              }
+            });
           }
         }
         
@@ -74,8 +83,8 @@ const main = async () => {
           return;
         }
         
-        await installPackages([...pluginsToInstall]);
-        await buildPackages([...pluginsToInstall]);
+        await installNpmPackages([...pluginsToInstall]);
+        await buildNpmPackages([...pluginsToInstall]);
       } catch (error) {
         console.error(`Error in installall command: ${error.message}`);
       }
@@ -89,7 +98,7 @@ const main = async () => {
     .argument('<packages...>', 'packages to build')
     .action(async (packages) => {
       try {
-        await buildPackages(packages);
+        await buildNpmPackages(packages);
       } catch (error) {
         console.error(`Error in build command: ${error.message}`);
       }
@@ -111,7 +120,11 @@ const main = async () => {
           const characterJson = JSON.parse(characterJsonString);
           
           if (characterJson.plugins && Array.isArray(characterJson.plugins)) {
-            characterJson.plugins.forEach(plugin => pluginsToBuild.add(plugin));
+            characterJson.plugins.forEach(plugin => {
+              if (getPluginType(plugin) === 'npm') {
+                pluginsToBuild.add(plugin);
+              }
+            });
           }
         }
         
@@ -120,7 +133,7 @@ const main = async () => {
           return;
         }
         
-        await buildPackages([...pluginsToBuild]);
+        await buildNpmPackages([...pluginsToBuild]);
       } catch (error) {
         console.error(`Error in buildall command: ${error.message}`);
       }
