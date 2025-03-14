@@ -6,7 +6,7 @@ import fs from 'fs';
 import { Command } from 'commander';
 import dotenv from 'dotenv';
 
-import { runCharacter, installPackages } from './util.mjs';
+import { runCharacter, installPackages, buildPackages } from './util.mjs';
 
 const main = async () => {
   dotenv.config();
@@ -43,6 +43,7 @@ const main = async () => {
     .action(async (packages) => {
       try {
         await installPackages(packages);
+        await buildPackages(packages);
       } catch (error) {
         console.error(`Error in install command: ${error.message}`);
       }
@@ -74,8 +75,54 @@ const main = async () => {
         }
         
         await installPackages([...pluginsToInstall]);
+        await buildPackages([...pluginsToInstall]);
       } catch (error) {
         console.error(`Error in installall command: ${error.message}`);
+      }
+      process.exit(1);
+    });
+
+  program
+    .command('build')
+    .alias('b')
+    .description('Build packages without installing them')
+    .argument('<packages...>', 'packages to build')
+    .action(async (packages) => {
+      try {
+        await buildPackages(packages);
+      } catch (error) {
+        console.error(`Error in build command: ${error.message}`);
+      }
+      process.exit(1);
+    });
+
+  program
+    .command('buildall')
+    .alias('ba')
+    .description('Build all plugins from character.json files')
+    .argument('<files...>', 'character.json file paths')
+    .action(async (files) => {
+      try {
+        const pluginsToBuild = new Set();
+        
+        for (const file of files) {
+          const characterJsonPath = path.resolve(process.cwd(), file);
+          const characterJsonString = await fs.promises.readFile(characterJsonPath, 'utf8');
+          const characterJson = JSON.parse(characterJsonString);
+          
+          if (characterJson.plugins && Array.isArray(characterJson.plugins)) {
+            characterJson.plugins.forEach(plugin => pluginsToBuild.add(plugin));
+          }
+        }
+        
+        if (pluginsToBuild.size === 0) {
+          console.log('No plugins found to build');
+          return;
+        }
+        
+        await buildPackages([...pluginsToBuild]);
+      } catch (error) {
+        console.error(`Error in buildall command: ${error.message}`);
       }
       process.exit(1);
     });
