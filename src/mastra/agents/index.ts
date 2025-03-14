@@ -14,11 +14,22 @@ const packageLookup = new PnpmPackageLookup({
 const characterJsonPath = process.env._CHARACTER_JSON_PATH as string;
 const characterJsonString = await fs.promises.readFile(characterJsonPath, 'utf8');
 const characterJson = JSON.parse(characterJsonString);
-const { plugins = [] } = characterJson;
 
-// plugins
-const servers: Record<string, any> = {};
+// sort plugins
+const { plugins = [] } = characterJson;
+const npmPlugins: string[] = [];
+const composioPlugins: string[] = [];
 for (const plugin of plugins) {
+  if (plugin.startsWith('composio:')) {
+    composioPlugins.push(plugin);
+  } else {
+    npmPlugins.push(plugin);
+  }
+}
+
+// resolve npm plugins
+const servers: Record<string, any> = {};
+for (const plugin of npmPlugins) {
   // find the package name matching this specifier
   const packageName = await packageLookup.getPackageNameBySpecifier(plugin);
   if (!packageName) {
@@ -33,14 +44,13 @@ for (const plugin of plugins) {
   };
 }
 
-// mcp
+// mcp tools
 const mcp = new MCPConfiguration({
   servers,
 });
 const mcpTools = await mcp.getTools();
-// console.log('mcpTools', mcpTools);
 
-// composio
+// composio tools
 const composio = new ComposioIntegration({
   config: {
     API_KEY: process.env.COMPOSIO_API_KEY!,
@@ -49,16 +59,17 @@ const composio = new ComposioIntegration({
     connectedAccountId: '4d79004e-320a-4dc9-be1a-1037a6fe9866',
   },
 });
-const actionsEnums = [
-  'GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER',
-  'GITHUB_ACTIVITY_LIST_STARGAZERS_FOR_REPO',
-  'GITHUB_GET_OCTOCAT',
-];
+// const actionsEnums = [
+//   'GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER',
+//   'GITHUB_ACTIVITY_LIST_STARGAZERS_FOR_REPO',
+//   'GITHUB_GET_OCTOCAT',
+// ];
+const actionsEnums = composioPlugins.map((plugin) => plugin.replace('composio:', ''));
 const composioToolset = await composio.getTools({
   actions: actionsEnums,
 }) as ToolsInput;
-// console.log('composioToolset', composioToolset);
 
+// agent
 export const characterAgent = new Agent({
   name: "Character",
   instructions: dedent`\
