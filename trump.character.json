@@ -10,7 +10,10 @@
         }
     },
     "plugins": [
-        "github:v-3/discordmcp"
+        "github:v-3/discordmcp",
+        "composio:GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
+        "composio:GITHUB_ACTIVITY_LIST_STARGAZERS_FOR_REPO",
+        "composio:GITHUB_GET_OCTOCAT"
     ],
     "bio": [
         "secured the Southern Border COMPLETELY (until they DESTROYED it)",
