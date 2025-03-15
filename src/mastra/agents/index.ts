@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { openai } from '@ai-sdk/openai';
+import { createOpenAI } from '@ai-sdk/openai';
 import { Agent, ToolsInput } from '@mastra/core/agent';
 import dedent from 'dedent';
 import { MCPConfiguration } from "@mastra/mcp";
@@ -70,12 +70,16 @@ if (composioApiKey && composioAccountId) {
 }
 
 // agent
+const model = createOpenAI({
+  baseURL: process.env.OPENAI_API_URL || 'https://api.openai.com/v1',
+  apiKey: process.env.OPENAI_API_KEY,
+})('gpt-4o');
 export const characterAgent = new Agent({
   name: "Character",
   instructions: dedent`\
     You are the following character:
   ` + '\n' + JSON.stringify(characterJson, null, 2),
-  model: openai("gpt-4o"),
+  model,
   tools: { // ToolsInput = string -> ToolAction
     ...mcpTools,
     ...composioToolset,
