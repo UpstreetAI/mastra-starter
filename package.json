@@ -6,7 +6,7 @@
     "mastra-starter": "./index.mjs"
   },
   "scripts": {
-    "test": "node index.mjs installall ./trump.character.json; node index.mjs dev ./trump.character.json;"
+    "test": "node index.mjs installall ./chad.character.json; node index.mjs dev ./chad.character.json;"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +22,7 @@
     "dedent": "^1.5.3",
     "dotenv": "^16.4.7",
     "mastra": "^0.3.0",
+    "mcp-communicator-telegram": "github:qpd-v/mcp-communicator-telegram",
     "pnpm-package-lookup": "^0.0.2",
     "yaml": "^2.7.0",
     "zod": "^3.24.2"

@@ -1,49 +1,50 @@
-import fs from 'fs';
-import path from 'path';
-import { openai } from '@ai-sdk/openai';
-import { Agent, ToolsInput } from '@mastra/core/agent';
-import dedent from 'dedent';
+import fs from "fs";
+import path from "path";
+import { openai } from "@ai-sdk/openai";
+import { Agent, ToolsInput } from "@mastra/core/agent";
+import dedent from "dedent";
 import { MCPConfiguration } from "@mastra/mcp";
-import { ComposioIntegration } from '@mastra/composio';
-import { sortPlugins } from '../../../util.mjs';
-import { PnpmPackageLookup } from 'pnpm-package-lookup';
+import { ComposioIntegration } from "@mastra/composio";
+import { sortPlugins } from "../../../util.mjs";
+import { PnpmPackageLookup } from "pnpm-package-lookup";
 
 // character
-const packageLookup = new PnpmPackageLookup({
-  pnpmLockYamlPath: path.join('..', '..', 'pnpm-lock.yaml'),
-});
+
 const characterJsonPath = process.env._CHARACTER_JSON_PATH as string;
-const characterJsonString = await fs.promises.readFile(characterJsonPath, 'utf8');
+const characterJsonString = await fs.promises.readFile(
+  characterJsonPath,
+  "utf8"
+);
 const characterJson = JSON.parse(characterJsonString);
 
 // sort plugins
 const { plugins = [] } = characterJson;
-const {
-  npm: npmPlugins,
-  composio: composioPlugins,
-} = sortPlugins(plugins);
+const { npm: npmPlugins, composio: composioPlugins } = sortPlugins(plugins);
 
 // resolve npm plugins
 const servers: Record<string, any> = {};
 for (const plugin of npmPlugins) {
   // find the package name matching this specifier
-  const packageName = await packageLookup.getPackageNameBySpecifier(plugin);
-  if (!packageName) {
-    throw new Error(`Package name not found for specifier: ${plugin}`);
-  }
+  const name = plugin.split("/").pop() || "";
+  const localPackagePath = path.resolve(
+    "..",
+    "..",
+    "packages",
+    name,
+    "build/index.js"
+  );
 
-  const packagePath = import.meta.resolve(packageName).replace('file://', '');
-  servers[plugin] = {
+  servers[name] = {
     command: "node",
-    args: [packagePath],
+    args: [localPackagePath],
     env: process.env as any,
   };
 }
-
 // mcp tools
 const mcp = new MCPConfiguration({
   servers,
 });
+
 const mcpTools = await mcp.getTools();
 
 // composio tools
@@ -54,7 +55,7 @@ if (composioApiKey && composioAccountId) {
   const composio = new ComposioIntegration({
     config: {
       API_KEY: composioApiKey,
-      entityId: 'default',
+      entityId: "default",
       connectedAccountId: composioAccountId,
     },
   });
@@ -63,20 +64,26 @@ if (composioApiKey && composioAccountId) {
   //   'GITHUB_ACTIVITY_LIST_STARGAZERS_FOR_REPO',
   //   'GITHUB_GET_OCTOCAT',
   // ];
-  const actionsEnums = composioPlugins.map((plugin: string) => plugin.replace('composio:', ''));
-  composioToolset = await composio.getTools({
+  const actionsEnums = composioPlugins.map((plugin: string) =>
+    plugin.replace("composio:", "")
+  );
+  composioToolset = (await composio.getTools({
     actions: actionsEnums,
-  }) as ToolsInput;
+  })) as ToolsInput;
 }
 
 // agent
 export const characterAgent = new Agent({
   name: "Character",
-  instructions: dedent`\
+  instructions:
+    dedent`\
     You are the following character:
-  ` + '\n' + JSON.stringify(characterJson, null, 2),
+  ` +
+    "\n" +
+    JSON.stringify(characterJson, null, 2),
   model: openai("gpt-4o"),
-  tools: { // ToolsInput = string -> ToolAction
+  tools: {
+    // ToolsInput = string -> ToolAction
     ...mcpTools,
     ...composioToolset,
   },
