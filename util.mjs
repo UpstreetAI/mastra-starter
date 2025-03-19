@@ -93,7 +93,7 @@ export const buildNpmPackages = async (packageSpecifiers) => {
   console.log(`Building packages: ${packageSpecifiers.join(", ")}`);
 
   // Instead of using packageLookup, extract package names from git URLs
-  const packageNames = packageSpecifiers.map((url) => {
+  const packageBasenames = packageSpecifiers.map((url) => {
     // Extract the repo name from the git URL
     const parts = url.split("/");
     let repoName = parts[parts.length - 1];
@@ -107,25 +107,25 @@ export const buildNpmPackages = async (packageSpecifiers) => {
   const results = [];
   let allSuccessful = true;
 
-  for (const packageName of packageNames) {
-    console.log(`Building package: ${packageName}`);
+  for (const packageBasename of packageBasenames) {
+    console.log(`Building package: ${packageBasename}`);
 
     try {
-      const p = path.resolve(process.cwd(), "packages", packageName);
+      const packagePath = path.resolve(process.cwd(), "packages", packageBasename);
       const cp = child_process.spawn("pnpm", ["build"], {
         stdio: "inherit",
-        cwd: p,
+        cwd: packagePath,
         env: { ...process.env },
       });
 
       const result = await new Promise((resolveSpawn, rejectSpawn) => {
         cp.on("error", (error) => {
           console.error(
-            `Error executing pnpm build for ${packageName}: ${error.message}`
+            `Error executing pnpm build for ${packageBasename}: ${error.message}`
           );
           resolveSpawn({
             success: false,
-            package: packageName,
+            package: packageBasename,
             error: error.message,
           });
         });
@@ -133,16 +133,16 @@ export const buildNpmPackages = async (packageSpecifiers) => {
         cp.on("close", (code) => {
           if (code !== 0) {
             console.error(
-              `pnpm build for ${packageName} exited with code ${code}`
+              `pnpm build for ${packageBasename} exited with code ${code}`
             );
             resolveSpawn({
               success: false,
-              package: packageName,
+              package: packageBasename,
               error: `exited with code ${code}`,
             });
           } else {
-            console.log(`Build completed successfully for ${packageName}`);
-            resolveSpawn({ success: true, package: packageName });
+            console.log(`Build completed successfully for ${packageBasename}`);
+            resolveSpawn({ success: true, package: packageBasename });
           }
         });
       });
@@ -155,7 +155,7 @@ export const buildNpmPackages = async (packageSpecifiers) => {
       console.log("error", error);
       results.push({
         success: false,
-        package: packageName,
+        package: packageBasename,
         error: error.message,
       });
       allSuccessful = false;
