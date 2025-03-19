@@ -1,12 +1,9 @@
-import path from 'path';
+import path from "path";
 import child_process from "child_process";
-import { PnpmPackageLookup } from 'pnpm-package-lookup';
 
-export const runCharacter = async (characterJsonPath, {
-  env = {},
-} = {}) => {
-  const mastraPath = import.meta.resolve('mastra').replace('file://', '');
-  const cp = child_process.spawn(process.execPath, [mastraPath, 'dev'], {
+export const runCharacter = async (characterJsonPath, { env = {} } = {}) => {
+  const mastraPath = import.meta.resolve("mastra").replace("file://", "");
+  const cp = child_process.spawn(process.execPath, [mastraPath, "dev"], {
     env: {
       ...env,
       _CHARACTER_JSON_PATH: characterJsonPath,
@@ -14,27 +11,27 @@ export const runCharacter = async (characterJsonPath, {
   });
   cp.stdout.pipe(process.stdout);
   cp.stderr.pipe(process.stderr);
-  
+
   return new Promise((resolve, reject) => {
-    cp.on('close', (code) => {
+    cp.on("close", (code) => {
       if (code !== 0) {
         reject(new Error(`Process exited with code ${code}`));
       } else {
         resolve();
       }
     });
-    
-    cp.on('error', (error) => {
+
+    cp.on("error", (error) => {
       reject(error);
     });
   });
 };
 
 export const getPluginType = (plugin) => {
-  if (plugin.startsWith('composio:')) {
-    return 'composio';
+  if (plugin.startsWith("composio:")) {
+    return "composio";
   } else {
-    return 'npm';
+    return "npm";
   }
 };
 export const sortPlugins = (plugins) => {
@@ -42,9 +39,9 @@ export const sortPlugins = (plugins) => {
   const composio = [];
   for (const plugin of plugins) {
     const pluginType = getPluginType(plugin);
-    if (pluginType === 'npm') {
+    if (pluginType === "npm") {
       npm.push(plugin);
-    } else if (pluginType === 'composio') {
+    } else if (pluginType === "composio") {
       composio.push(plugin);
     }
   }
@@ -57,21 +54,42 @@ export const sortPlugins = (plugins) => {
 export const installNpmPackages = (packageSpecifiers) => {
   console.log(`Installing packages: ${packageSpecifiers.join(", ")}`);
 
-  return new Promise((resolve, reject) => {
-    const cp = child_process.spawn("pnpm", ["install", ...packageSpecifiers], {
+  // Ensure packages directory exists
+  const packagesDir = path.resolve(process.cwd(), "packages");
+  try {
+    // Create packages directory if it doesn't exist
+    const mkdirProcess = child_process.spawnSync("mkdir", ["-p", packagesDir], {
       stdio: "inherit",
-      cwd: process.cwd(),
     });
+    if (mkdirProcess.status !== 0) {
+      throw new Error(
+        `Failed to create packages directory: exit code ${mkdirProcess.status}`
+      );
+    }
+  } catch (error) {
+    console.error(`Error creating packages directory: ${error.message}`);
+    return Promise.reject(error);
+  }
+
+  return new Promise((resolve, reject) => {
+    const cp = child_process.spawn(
+      "git",
+      ["clone", "--depth", "1", ...packageSpecifiers],
+      {
+        stdio: "inherit",
+        cwd: packagesDir,
+      }
+    );
 
     cp.on("error", (error) => {
-      console.error(`Error executing pnpm install: ${error.message}`);
+      console.error(`Error executing git clone: ${error.message}`);
       reject(error);
     });
 
     cp.on("close", (code) => {
       if (code !== 0) {
-        console.error(`pnpm install exited with code ${code}`);
-        reject(new Error(`pnpm install exited with code ${code}`));
+        console.error(`git clone exited with code ${code}`);
+        reject(new Error(`git clone exited with code ${code}`));
       } else {
         resolve();
       }
@@ -81,22 +99,26 @@ export const installNpmPackages = (packageSpecifiers) => {
 export const buildNpmPackages = async (packageSpecifiers) => {
   console.log(`Building packages: ${packageSpecifiers.join(", ")}`);
 
-  // get the packagePaths from the packageSpecifiers
-  const packageLookup = new PnpmPackageLookup({
-    pnpmLockYamlPath: path.resolve(process.cwd(), 'pnpm-lock.yaml'),
+  // Instead of using packageLookup, extract package names from git URLs
+  const packageNames = packageSpecifiers.map((url) => {
+    // Extract the repo name from the git URL
+    const parts = url.split("/");
+    let repoName = parts[parts.length - 1];
+    // Remove .git extension if present
+    if (repoName.endsWith(".git")) {
+      repoName = repoName.slice(0, -4);
+    }
+    return repoName;
   });
-  const packagePaths = await Promise.all(packageSpecifiers.map(async (packageSpecifier) => {
-    return await packageLookup.getPackageNameBySpecifier(packageSpecifier);
-  }));
 
   const results = [];
   let allSuccessful = true;
 
-  for (const packagePath of packagePaths) {
-    console.log(`Building package: ${packagePath}`);
-    
+  for (const packageName of packageNames) {
+    console.log(`Building package: ${packageName}`);
+
     try {
-      const p = path.resolve(process.cwd(), 'node_modules', packagePath);
+      const p = path.resolve(process.cwd(), "packages", packageName);
       const cp = child_process.spawn("pnpm", ["build"], {
         stdio: "inherit",
         cwd: p,
@@ -105,17 +127,29 @@ export const buildNpmPackages = async (packageSpecifiers) => {
 
       const result = await new Promise((resolveSpawn, rejectSpawn) => {
         cp.on("error", (error) => {
-          console.error(`Error executing pnpm build for ${packagePath}: ${error.message}`);
-          resolveSpawn({ success: false, package: packagePath, error: error.message });
+          console.error(
+            `Error executing pnpm build for ${packageName}: ${error.message}`
+          );
+          resolveSpawn({
+            success: false,
+            package: packageName,
+            error: error.message,
+          });
         });
 
         cp.on("close", (code) => {
           if (code !== 0) {
-            console.error(`pnpm build for ${packagePath} exited with code ${code}`);
-            resolveSpawn({ success: false, package: packagePath, error: `exited with code ${code}` });
+            console.error(
+              `pnpm build for ${packageName} exited with code ${code}`
+            );
+            resolveSpawn({
+              success: false,
+              package: packageName,
+              error: `exited with code ${code}`,
+            });
           } else {
-            console.log(`Build completed successfully for ${packagePath}`);
-            resolveSpawn({ success: true, package: packagePath });
+            console.log(`Build completed successfully for ${packageName}`);
+            resolveSpawn({ success: true, package: packageName });
           }
         });
       });
@@ -125,8 +159,12 @@ export const buildNpmPackages = async (packageSpecifiers) => {
         allSuccessful = false;
       }
     } catch (error) {
-      console.log('error', error);
-      results.push({ success: false, package: packagePath, error: error.message });
+      console.log("error", error);
+      results.push({
+        success: false,
+        package: packageName,
+        error: error.message,
+      });
       allSuccessful = false;
     }
   }
