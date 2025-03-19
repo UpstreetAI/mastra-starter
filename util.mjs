@@ -1,5 +1,6 @@
 import path from "path";
 import child_process from "child_process";
+import { mkdirp } from "mkdirp";
 
 export const runCharacter = async (characterJsonPath, { env = {} } = {}) => {
   const mastraPath = import.meta.resolve("mastra").replace("file://", "");
@@ -51,27 +52,19 @@ export const sortPlugins = (plugins) => {
   };
 };
 
-export const installNpmPackages = (packageSpecifiers) => {
+export const installNpmPackages = async (packageSpecifiers) => {
   console.log(`Installing packages: ${packageSpecifiers.join(", ")}`);
 
   // Ensure packages directory exists
   const packagesDir = path.resolve(process.cwd(), "packages");
   try {
-    // Create packages directory if it doesn't exist
-    const mkdirProcess = child_process.spawnSync("mkdir", ["-p", packagesDir], {
-      stdio: "inherit",
-    });
-    if (mkdirProcess.status !== 0) {
-      throw new Error(
-        `Failed to create packages directory: exit code ${mkdirProcess.status}`
-      );
-    }
+    await mkdirp(packagesDir);
   } catch (error) {
     console.error(`Error creating packages directory: ${error.message}`);
     return Promise.reject(error);
   }
 
-  return new Promise((resolve, reject) => {
+  return await new Promise((resolve, reject) => {
     const cp = child_process.spawn(
       "git",
       ["clone", "--depth", "1", ...packageSpecifiers],
