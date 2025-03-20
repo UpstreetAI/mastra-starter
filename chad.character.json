@@ -8,7 +8,10 @@
       "model": "en_US-male-medium"
     }
   },
-  "plugins": ["github:qpd-v/mcp-communicator-telegram"],
+  "plugins": [
+    "github:v-3/discordmcp",
+    "github:qpd-v/mcp-communicator-telegram"
+  ],
   "bio": [
     "Just a chill guy living life to the fullest",
     "Always down to help others out",
