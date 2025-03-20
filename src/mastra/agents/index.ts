@@ -3,9 +3,12 @@ import path from "path";
 import { createOpenAI } from "@ai-sdk/openai";
 import { Agent, ToolsInput } from "@mastra/core/agent";
 import dedent from "dedent";
+import { PnpmPackageLookup } from 'pnpm-package-lookup';
 import { MCPConfiguration } from "@mastra/mcp";
 import { ComposioIntegration } from "@mastra/composio";
-import { sortPlugins } from "../../../util.mjs";
+import { sortPlugins, getNpmPackageType } from "../../../util.mjs";
+
+const rootDir = path.resolve(process.cwd(), "..", "..");
 
 const characterJsonPath = process.env._CHARACTER_JSON_PATH as string;
 const characterJsonString = await fs.promises.readFile(
@@ -20,14 +23,60 @@ const { npm: npmPlugins, composio: composioPlugins } = sortPlugins(plugins);
 
 // resolve npm plugins
 const servers: Record<string, any> = {};
-for (const plugin of npmPlugins) {
-  const packagePath = path.resolve(process.cwd(), "packages", plugin);
-  servers[plugin] = {
-    command: "pnpm",
-    args: ["--dir", packagePath, "start"],
-    env: process.env as any,
-  };
+const pnpmLockYamlPath = path.resolve(rootDir, "pnpm-lock.yaml");
+const pnpmPackageLookup = new PnpmPackageLookup({
+  pnpmLockYamlPath,
+});
+for (const pluginSpecifier of npmPlugins) {
+  const npmPackageType = getNpmPackageType(pluginSpecifier);
+
+  let pluginSpecifier2;
+  const packagesDir = path.resolve(rootDir, "packages");
+  if (npmPackageType === "github") {
+    const packageBasename = path.basename(pluginSpecifier.replace("github:", ""));
+    const packageResolvedName = `file:${path.resolve(packagesDir, packageBasename)}`;
+    pluginSpecifier2 = await pnpmPackageLookup.getPackageNameBySpecifier(packageResolvedName);
+    if (!pluginSpecifier2) {
+      throw new Error(`Could not resolve package name for ${JSON.stringify({
+        pluginSpecifier,
+        packageBasename,
+        packageResolvedName,
+      }, null, 2)}`);
+    }
+  } else {
+    pluginSpecifier2 = pluginSpecifier;
+  }
+  const packagePath = path.resolve(rootDir, "node_modules", pluginSpecifier2);
+  // console.log('packagePath', {
+  //   pluginSpecifier,
+  //   pluginSpecifier2,
+  //   packagePath,
+  // });
+
+  // check if start script exists
+  const packageJsonPath = path.resolve(packagePath, "package.json");
+  const packageJson = JSON.parse(await fs.promises.readFile(packageJsonPath, "utf8"));
+  if (packageJson.scripts.start) {
+    servers[pluginSpecifier] = {
+      command: "pnpm",
+      args: ["--dir", packagePath, "--silent", "start"],
+      env: process.env as any,
+    };
+  } else {
+    // check if any bins exist; if so, use the first one
+    if (packageJson.bin && Object.keys(packageJson.bin).length > 0) {
+      const firstBin = Object.keys(packageJson.bin)[0];
+      servers[pluginSpecifier] = {
+        command: "pnpm",
+        args: ["--dir", packagePath, "--silent", "exec", firstBin],
+        env: process.env as any,
+      };
+    } else {
+      throw new Error(`No start script or bins found for ${pluginSpecifier}`);
+    }
+  }
 }
+// console.log('servers', servers);
 
 // mcp tools
 const mcp = new MCPConfiguration({
