@@ -97,123 +97,141 @@ const installNpmGithubPackages = async (packageSpecifiers) => {
     await rimraf(packagePath);
   }
 
-  // git clone all packages
-  await new Promise((resolve, reject) => {
-    const repoNames = packageSpecifiers.map((specifier) => {
-      specifier = specifier.replace("github:", "");
-      specifier = `https://github.com/${specifier}`;
-      return specifier;
-    });
-    const cp = child_process.spawn(
-      "git",
-      ["clone", "--depth", "1", ...repoNames],
-      {
-        stdio: "inherit",
-        cwd: packagesDir,
-      }
-    );
-
-    cp.on("error", (error) => {
-      console.error(`Error executing git clone: ${error.stack}`);
-      reject(error);
-    });
-
-    cp.on("close", (code) => {
-      if (code !== 0) {
-        console.error(`git clone exited with code ${code}`);
-        reject(new Error(`git clone exited with code ${code}`));
-      } else {
-        resolve();
-      }
-    });
+  // Transform package specifiers to GitHub URLs
+  const repoNames = packageSpecifiers.map((specifier) => {
+    specifier = specifier.replace("github:", "");
+    specifier = `https://github.com/${specifier}`;
+    return specifier;
   });
 
-  // pnpm install in local directory
-  await Promise.all(packageSpecifiers.map(async (packageSpecifier) => {
-    const packageBasename = path.basename(packageSpecifier.replace("github:", ""));
-    const packagePath = path.resolve(packagesDir, packageBasename);
-
-    await new Promise((resolveInstall, rejectInstall) => {
-      const cp = child_process.spawn("pnpm", ["install"], {
-        stdio: "inherit",
-        cwd: packagePath,
-        env: { ...process.env },
-      });
-
-      cp.on("error", (error) => {
-        console.error(
-          `Error executing pnpm install for ${packageBasename}: ${error.stack}`
+  // git clone all packages
+  await Promise.all(
+    repoNames.map(async (repoUrl) => {
+      return new Promise((resolveClone, rejectClone) => {
+        console.log(`Cloning ${repoUrl}...`);
+        const cp = child_process.spawn(
+          "git",
+          ["clone", "--depth", "1", repoUrl],
+          {
+            stdio: "inherit",
+            cwd: packagesDir,
+          }
         );
-        rejectInstall(error);
-      });
-      cp.on("close", (code) => {
-        if (code !== 0) {
-          rejectInstall(new Error(`pnpm install exited with code ${code}`));
-        } else {
-          resolveInstall();
-        }
-      });
-    });
 
-    // pnpm build
-    // note: this is advisory and allowed to fail
-    await new Promise((resolveSpawn, rejectSpawn) => {
-      const cp = child_process.spawn("pnpm", ["build"], {
-        stdio: "inherit",
-        cwd: packagePath,
-        env: { ...process.env },
-      });
+        cp.on("error", (error) => {
+          console.error(
+            `Error executing git clone for ${repoUrl}: ${error.stack}`
+          );
+          rejectClone(error);
+        });
 
-      cp.on("error", (error) => {
-        console.error(
-          `Error executing pnpm build for ${packageBasename}: ${error.stack}`
-        );
-        resolveSpawn({
-          success: false,
-          package: packageBasename,
-          error: error.stack,
+        cp.on("close", (code) => {
+          if (code !== 0) {
+            console.error(`git clone for ${repoUrl} exited with code ${code}`);
+            rejectClone(new Error(`git clone exited with code ${code}`));
+          } else {
+            console.log(`Successfully cloned ${repoUrl}`);
+            resolveClone();
+          }
         });
       });
-      cp.on("close", (code) => {
-        if (code !== 0) {
+    })
+  );
+
+  // pnpm install in local directory
+  await Promise.all(
+    packageSpecifiers.map(async (packageSpecifier) => {
+      const packageBasename = path.basename(
+        packageSpecifier.replace("github:", "")
+      );
+      const packagePath = path.resolve(packagesDir, packageBasename);
+
+      await new Promise((resolveInstall, rejectInstall) => {
+        const cp = child_process.spawn("pnpm", ["install"], {
+          stdio: "inherit",
+          cwd: packagePath,
+          env: { ...process.env },
+        });
+
+        cp.on("error", (error) => {
           console.error(
-            `pnpm build for ${packageBasename} exited with code ${code}`
+            `Error executing pnpm install for ${packageBasename}: ${error.stack}`
+          );
+          rejectInstall(error);
+        });
+        cp.on("close", (code) => {
+          if (code !== 0) {
+            rejectInstall(new Error(`pnpm install exited with code ${code}`));
+          } else {
+            resolveInstall();
+          }
+        });
+      });
+
+      // pnpm build
+      // note: this is advisory and allowed to fail
+      await new Promise((resolveSpawn, rejectSpawn) => {
+        const cp = child_process.spawn("pnpm", ["build"], {
+          stdio: "inherit",
+          cwd: packagePath,
+          env: { ...process.env },
+        });
+
+        cp.on("error", (error) => {
+          console.error(
+            `Error executing pnpm build for ${packageBasename}: ${error.stack}`
           );
           resolveSpawn({
             success: false,
             package: packageBasename,
-            error: `exited with code ${code}`,
+            error: error.stack,
           });
-        } else {
-          console.log(`Build completed successfully for ${packageBasename}`);
-          resolveSpawn({ success: true, package: packageBasename });
-        }
+        });
+        cp.on("close", (code) => {
+          if (code !== 0) {
+            console.error(
+              `pnpm build for ${packageBasename} exited with code ${code}`
+            );
+            resolveSpawn({
+              success: false,
+              package: packageBasename,
+              error: `exited with code ${code}`,
+            });
+          } else {
+            console.log(`Build completed successfully for ${packageBasename}`);
+            resolveSpawn({ success: true, package: packageBasename });
+          }
+        });
       });
-    });
 
-    // pnpm install to app
-    await new Promise((resolveInstall, rejectInstall) => {
-      const cp = child_process.spawn("pnpm", ["install", `file:${packagePath}`], {
-        stdio: "inherit",
-        cwd: process.cwd(),
-        env: { ...process.env },
-      });
-
-      cp.on("error", (error) => {
-        console.error(
-          `Error executing pnpm install for ${packageBasename}: ${error.stack}`
+      // pnpm install to app
+      await new Promise((resolveInstall, rejectInstall) => {
+        const cp = child_process.spawn(
+          "pnpm",
+          ["install", `file:${packagePath}`],
+          {
+            stdio: "inherit",
+            cwd: process.cwd(),
+            env: { ...process.env },
+          }
         );
-        rejectInstall(error);
+
+        cp.on("error", (error) => {
+          console.error(
+            `Error executing pnpm install for ${packageBasename}: ${error.stack}`
+          );
+          rejectInstall(error);
+        });
+        cp.on("close", (code) => {
+          if (code !== 0) {
+            rejectInstall(new Error(`pnpm install exited with code ${code}`));
+          } else {
+            resolveInstall();
+          }
+        });
       });
-      cp.on("close", (code) => {
-        if (code !== 0) {
-          rejectInstall(new Error(`pnpm install exited with code ${code}`));
-        } else {
-          resolveInstall();
-        }
-      });
-    });
-  }));
+    })
+  );
 };
 const installNpmBasicPackages = async (packageSpecifiers) => {
   // packageSpecifiers = uniquify(packageSpecifiers);
@@ -244,6 +262,6 @@ export const installNpmPackages = async (packageSpecifiers) => {
   const { github, npm } = sortNpmPackages(packageSpecifiers);
   await Promise.all([
     installNpmGithubPackages(github),
-    installNpmBasicPackages(npm)
+    installNpmBasicPackages(npm),
   ]);
 };
