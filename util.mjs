@@ -138,14 +138,15 @@ const installNpmGithubPackages = async (packageSpecifiers) => {
     })
   );
 
-  // pnpm install in local directory
+  // build and install all plugins into local packages
   await Promise.all(
     packageSpecifiers.map(async (packageSpecifier) => {
       const packageBasename = path.basename(
         packageSpecifier.replace("github:", "")
       );
       const packagePath = path.resolve(packagesDir, packageBasename);
-
+      
+      // pnpm install in local directory
       await new Promise((resolveInstall, rejectInstall) => {
         const cp = child_process.spawn("pnpm", ["install"], {
           stdio: "inherit",
@@ -203,35 +204,44 @@ const installNpmGithubPackages = async (packageSpecifiers) => {
           }
         });
       });
-
-      // pnpm install to app
-      await new Promise((resolveInstall, rejectInstall) => {
-        const cp = child_process.spawn(
-          "pnpm",
-          ["install", `file:${packagePath}`],
-          {
-            stdio: "inherit",
-            cwd: process.cwd(),
-            env: { ...process.env },
-          }
-        );
-
-        cp.on("error", (error) => {
-          console.error(
-            `Error executing pnpm install for ${packageBasename}: ${error.stack}`
-          );
-          rejectInstall(error);
-        });
-        cp.on("close", (code) => {
-          if (code !== 0) {
-            rejectInstall(new Error(`pnpm install exited with code ${code}`));
-          } else {
-            resolveInstall();
-          }
-        });
-      });
     })
   );
+
+  // install all plugins into app
+  // pnpm install to app
+  await new Promise((resolveInstall, rejectInstall) => {
+    const packageRefs = packageSpecifiers.map((packageSpecifier) => {
+      const packageBasename = path.basename(
+        packageSpecifier.replace("github:", "")
+      );
+      const packagePath = path.resolve(packagesDir, packageBasename);
+      return `file:${packagePath}`;
+    });
+    console.log(`Installing ${JSON.stringify(packageRefs)} to app`);
+    const cp = child_process.spawn(
+      "pnpm",
+      ["install", ...packageRefs],
+      {
+        stdio: "inherit",
+        cwd: process.cwd(),
+        env: { ...process.env },
+      }
+    );
+
+    cp.on("error", (error) => {
+      console.error(
+        `Error executing pnpm install for ${packageBasename}: ${error.stack}`
+      );
+      rejectInstall(error);
+    });
+    cp.on("close", (code) => {
+      if (code !== 0) {
+        rejectInstall(new Error(`pnpm install exited with code ${code}`));
+      } else {
+        resolveInstall();
+      }
+    });
+  });
 };
 const installNpmBasicPackages = async (packageSpecifiers) => {
   // packageSpecifiers = uniquify(packageSpecifiers);
