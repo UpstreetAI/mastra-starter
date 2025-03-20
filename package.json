@@ -6,7 +6,8 @@
     "mastra-starter": "./index.mjs"
   },
   "scripts": {
-    "test": "node index.mjs installall chad.character.json; node index.mjs dev chad.character.json;"
+    "test": "node index.mjs installall chad.character.json; node index.mjs dev chad.character.json;",
+    "dev": "mastra dev"
   },
   "keywords": [],
   "author": "",
@@ -16,12 +17,13 @@
   "dependencies": {
     "@ai-sdk/openai": "^1.2.2",
     "@mastra/composio": "^0.1.9",
-    "@mastra/core": "^0.6.0",
+    "@mastra/core": "^0.5.0",
     "@mastra/mcp": "^0.3.0",
     "commander": "^13.1.0",
     "dedent": "^1.5.3",
     "dotenv": "^16.4.7",
     "mastra": "^0.3.0",
+    "mcp-communicator-telegram": "file:/Users/gdesign/developer-projects/laborales/upstreet/mastra-starter/packages/mcp-communicator-telegram",
     "mkdirp": "^3.0.1",
     "pnpm-package-lookup": "^0.0.2",
     "rimraf": "^6.0.1",
