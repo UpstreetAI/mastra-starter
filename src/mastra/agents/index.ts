@@ -63,9 +63,12 @@ for (const pluginSpecifier of npmPlugins) {
   );
   const pluginName =
     pluginSpecifier
-      .split("/")
-      .pop()
-      ?.replace(/[^a-zA-Z0-9]/g, "") || "plugin"; // the name have to be a
+      // .replace(/^github:/, "")
+      .replace(/[\/:]+/g, "-")
+      .replace(/[^a-zA-Z0-9_-]/g, "");
+  if (!pluginName) {
+    throw new Error(`Could not clean up plugin name for ${pluginSpecifier}`);
+  }
   if (packageJson.scripts.start) {
     servers[pluginName] = {
       command: "pnpm",
