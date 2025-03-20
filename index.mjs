@@ -10,7 +10,6 @@ import {
   runCharacter,
   getPluginType,
   installNpmPackages,
-  buildNpmPackages,
 } from "./util.mjs";
 
 const main = async () => {
@@ -48,7 +47,6 @@ const main = async () => {
     .action(async (packages) => {
       try {
         await installNpmPackages(packages);
-        await buildNpmPackages(packages);
       } catch (error) {
         console.error(`Error in install command: ${error.message}`);
       }
@@ -84,58 +82,8 @@ const main = async () => {
         }
         
         await installNpmPackages([...pluginsToInstall]);
-        await buildNpmPackages([...pluginsToInstall]);
       } catch (error) {
-        console.error(`Error in installall command: ${error.message}`);
-      }
-      process.exit(1);
-    });
-
-  program
-    .command('build')
-    .alias('b')
-    .description('Build packages without installing them')
-    .argument('<packages...>', 'packages to build')
-    .action(async (packages) => {
-      try {
-        await buildNpmPackages(packages);
-      } catch (error) {
-        console.error(`Error in build command: ${error.message}`);
-      }
-      process.exit(1);
-    });
-
-  program
-    .command('buildall')
-    .alias('ba')
-    .description('Build all plugins from character.json files')
-    .argument('<files...>', 'character.json file paths')
-    .action(async (files) => {
-      try {
-        const pluginsToBuild = new Set();
-        
-        for (const file of files) {
-          const characterJsonPath = path.resolve(process.cwd(), file);
-          const characterJsonString = await fs.promises.readFile(characterJsonPath, 'utf8');
-          const characterJson = JSON.parse(characterJsonString);
-          
-          if (characterJson.plugins && Array.isArray(characterJson.plugins)) {
-            characterJson.plugins.forEach(plugin => {
-              if (getPluginType(plugin) === 'npm') {
-                pluginsToBuild.add(plugin);
-              }
-            });
-          }
-        }
-        
-        if (pluginsToBuild.size === 0) {
-          console.log('No plugins found to build');
-          return;
-        }
-        
-        await buildNpmPackages([...pluginsToBuild]);
-      } catch (error) {
-        console.error(`Error in buildall command: ${error.message}`);
+        console.error(`Error in installall command: ${error.stack}`);
       }
       process.exit(1);
     });
