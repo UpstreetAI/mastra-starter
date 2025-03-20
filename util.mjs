@@ -81,20 +81,16 @@ export const sortNpmPackages = (packageSpecifiers) => {
 const installNpmGithubPackages = async (packageSpecifiers) => {
   console.log(`Installing github packages: ${packageSpecifiers.join(", ")}`);
 
-  // Ensure packages directory exists
+  // wipe packages directory
   const packagesDir = path.resolve(process.cwd(), "packages");
+  await rimraf(packagesDir);
+
+  // Ensure packages directory exists
   try {
     await mkdirp(packagesDir);
   } catch (error) {
     console.error(`Error creating packages directory: ${error.stack}`);
     return Promise.reject(error);
-  }
-
-  // remove conflicting package directories
-  const existingPackageNames = await fs.promises.readdir(packagesDir);
-  for (const packageName of existingPackageNames) {
-    const packagePath = path.resolve(packagesDir, packageName);
-    await rimraf(packagePath);
   }
 
   // Transform package specifiers to GitHub URLs
