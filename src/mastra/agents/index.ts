@@ -27,6 +27,9 @@ const pnpmLockYamlPath = path.resolve(rootDir, "pnpm-lock.yaml");
 const pnpmPackageLookup = new PnpmPackageLookup({
   pnpmLockYamlPath,
 });
+
+console.log("Initializing plugin servers...");
+
 for (const pluginSpecifier of npmPlugins) {
   const npmPackageType = getNpmPackageType(pluginSpecifier);
 
@@ -40,7 +43,7 @@ for (const pluginSpecifier of npmPlugins) {
     pluginSpecifier2 =
       await pnpmPackageLookup.getPackageNameBySpecifier(packageResolvedName);
     if (!pluginSpecifier2) {
-      throw new Error(
+      console.error(
         `Could not resolve package name for ${JSON.stringify(
           {
             pluginSpecifier,
@@ -51,6 +54,7 @@ for (const pluginSpecifier of npmPlugins) {
           2
         )}`
       );
+      continue;
     }
   } else {
     pluginSpecifier2 = pluginSpecifier;
@@ -61,13 +65,13 @@ for (const pluginSpecifier of npmPlugins) {
   const packageJson = JSON.parse(
     await fs.promises.readFile(packageJsonPath, "utf8")
   );
-  const pluginName =
-    pluginSpecifier
-      // .replace(/^github:/, "")
-      .replace(/[\/:]+/g, "-")
-      .replace(/[^a-zA-Z0-9_-]/g, "");
+  const pluginName = pluginSpecifier
+    // .replace(/^github:/, "")
+    .replace(/[\/:]+/g, "-")
+    .replace(/[^a-zA-Z0-9_-]/g, "");
   if (!pluginName) {
-    throw new Error(`Could not clean up plugin name for ${pluginSpecifier}`);
+    console.error(`Could not clean up plugin name for ${pluginSpecifier}`);
+    continue;
   }
   if (packageJson.scripts.start) {
     servers[pluginName] = {
@@ -85,7 +89,7 @@ for (const pluginSpecifier of npmPlugins) {
         env: process.env as any,
       };
     } else {
-      throw new Error(
+      console.error(
         `No start script or bins found for ${pluginSpecifier} name ${pluginName}`
       );
     }
@@ -93,15 +97,26 @@ for (const pluginSpecifier of npmPlugins) {
 }
 
 // mcp tools
-const mcp = new MCPConfiguration({
-  servers,
-});
-const mcpTools = await mcp.getTools();
+console.log("Retrieving MCP tools...");
+let mcpTools: ToolsInput = {};
+try {
+  const mcp = new MCPConfiguration({
+    servers,
+  });
+
+  mcpTools = await mcp.getTools();
+  console.log(
+    `Successfully initialized ${Object.keys(mcpTools).length} MCP tools`
+  );
+} catch (error) {
+  console.error("Error initializing MCP tools:", error);
+  console.log("Continuing with limited functionality...");
+}
 
 // composio tools
 const composioApiKey = process.env.COMPOSIO_API_KEY;
 const composioAccountId = process.env.COMPOSIO_ACCOUNT_ID;
-let composioToolset: ToolsInput | undefined;
+let composioToolset: ToolsInput = {};
 if (composioApiKey && composioAccountId) {
   const composio = new ComposioIntegration({
     config: {
@@ -124,10 +139,12 @@ if (composioApiKey && composioAccountId) {
 }
 
 // agent
+console.log("Initializing agent...");
 const model = createOpenAI({
   baseURL: process.env.OPENAI_API_URL || "https://api.openai.com/v1",
   apiKey: process.env.OPENAI_API_KEY,
 })("gpt-4o");
+
 export const characterAgent = new Agent({
   name: "Character",
   instructions:
@@ -143,3 +160,5 @@ export const characterAgent = new Agent({
     ...composioToolset,
   },
 });
+
+console.log("Agent initialization completed!");
