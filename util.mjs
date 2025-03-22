@@ -1,5 +1,5 @@
 import path from "path";
-import fs from "fs";
+// import fs from "fs";
 import child_process from "child_process";
 import { mkdirp } from "mkdirp";
 import { rimraf } from "rimraf";
@@ -35,24 +35,30 @@ export const runCharacter = async (characterJsonPath, { env = {} } = {}) => {
 };
 
 export const getPluginType = (plugin) => {
-  if (plugin.startsWith("composio:")) {
+  if (/^https?:\/\//.test(plugin)) {
+    return "http";
+  } else if (plugin.startsWith("composio:")) {
     return "composio";
   } else {
     return "npm";
   }
 };
 export const sortPlugins = (plugins) => {
+  const http = [];
   const npm = [];
   const composio = [];
   for (const plugin of plugins) {
     const pluginType = getPluginType(plugin);
-    if (pluginType === "npm") {
+    if (pluginType === "http") {
+      http.push(plugin);
+    } else if (pluginType === "npm") {
       npm.push(plugin);
     } else if (pluginType === "composio") {
       composio.push(plugin);
     }
   }
   return {
+    http,
     npm,
     composio,
   };

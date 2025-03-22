@@ -17,9 +17,19 @@ const characterJsonString = await fs.promises.readFile(
 );
 const characterJson = JSON.parse(characterJsonString);
 
+const cleanName = (name: string) => {
+  return name
+    .replace(/[\/:]+/g, "-")
+    .replace(/[^a-zA-Z0-9_-]/g, "");
+};
+
 // sort plugins
 const { plugins = [] } = characterJson;
-const { npm: npmPlugins, composio: composioPlugins } = sortPlugins(plugins);
+const {
+  http: httpPlugins,
+  npm: npmPlugins,
+  composio: composioPlugins,
+} = sortPlugins(plugins);
 
 // resolve npm plugins
 const servers: Record<string, any> = {};
@@ -30,6 +40,15 @@ const pnpmPackageLookup = new PnpmPackageLookup({
 
 console.log("Initializing plugin servers...");
 
+// http plugins
+for (const pluginSpecifier of httpPlugins) {
+  const pluginName = cleanName(pluginSpecifier)
+  console.log('pluginName', pluginName, pluginSpecifier);
+  servers[pluginName] = {
+    url: new URL(pluginSpecifier),
+  };
+}
+// npm plugins
 for (const pluginSpecifier of npmPlugins) {
   const npmPackageType = getNpmPackageType(pluginSpecifier);
 
@@ -65,10 +84,7 @@ for (const pluginSpecifier of npmPlugins) {
   const packageJson = JSON.parse(
     await fs.promises.readFile(packageJsonPath, "utf8")
   );
-  const pluginName = pluginSpecifier
-    // .replace(/^github:/, "")
-    .replace(/[\/:]+/g, "-")
-    .replace(/[^a-zA-Z0-9_-]/g, "");
+  const pluginName = cleanName(pluginSpecifier)
   if (!pluginName) {
     console.error(`Could not clean up plugin name for ${pluginSpecifier}`);
     continue;
